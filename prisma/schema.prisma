@@ -1,0 +1,143 @@
+// prisma/schema.prisma
+
+datasource db {
+  provider = "sqlite"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  SUPER_ADMIN
+  BRANCH_MANAGER
+  STAFF
+}
+
+enum MovementType {
+  IN
+  OUT
+  TRANSFER
+  DAMAGED_IN_TRANSIT
+}
+
+enum TransferStatus {
+  PENDING
+  IN_TRANSIT
+  COMPLETED
+  REJECTED
+}
+
+enum BranchType {
+  WAREHOUSE
+  RETAIL_STORE
+  TRANSIT_HUB
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(STAFF)
+  branchId  String?  // Nullable jika Super Admin
+  branch    Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  movements StockMovement[]
+}
+
+model Branch {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  address   String
+  type      BranchType @default(WAREHOUSE)
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  users             User[]
+  inventories       Inventory[]
+  sourceTransfers   StockTransfer[] @relation("SourceBranch")
+  destTransfers     StockTransfer[] @relation("DestBranch")
+}
+
+model Product {
+  id         String   @id @default(uuid())
+  sku        String   @unique
+  name       String
+  category   String
+  basePrice  Decimal
+  minStock   Int      @default(5) // Limit low stock alert
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  inventories    Inventory[]
+  movementItems  StockMovementItem[]
+  transferItems  StockTransferItem[]
+}
+
+// Junction Table untuk stok aktual per cabang
+model Inventory {
+  id         String   @id @default(uuid())
+  branchId   String
+  productId  String
+  quantity   Int      @default(0)
+  reserved   Int      @default(0) // Stok terkunci saat transfer berstatus PENDING/IN_TRANSIT
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  branch     Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, productId]) // Mencegah duplikasi data stok produk di cabang yang sama
+  @@index([branchId])
+  @@index([productId])
+}
+
+model StockMovement {
+  id           String       @id @default(uuid())
+  type         MovementType
+  userId       String
+  user         User         @relation(fields: [userId], references: [id])
+  notes        String?
+  timestamp    DateTime     @default(now())
+
+  items        StockMovementItem[]
+}
+
+model StockMovementItem {
+  id         String   @id @default(uuid())
+  movementId String
+  productId  String
+  quantity   Int
+
+  movement   StockMovement @relation(fields: [movementId], references: [id], onDelete: Cascade)
+  product    Product       @relation(fields: [productId], references: [id])
+}
+
+model StockTransfer {
+  id           String         @id @default(uuid())
+  sourceId     String
+  destId       String
+  status       TransferStatus @default(PENDING)
+  notes        String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  sourceBranch Branch         @relation("SourceBranch", fields: [sourceId], references: [id])
+  destBranch   Branch         @relation("DestBranch", fields: [destId], references: [id])
+  items        StockTransferItem[]
+}
+
+model StockTransferItem {
+  id             String        @id @default(uuid())
+  transferId     String
+  productId      String
+  quantitySent   Int
+  quantityRecv   Int?          // Nullable sampai status COMPLETED untuk verifikasi selisih
+
+  transfer       StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  product        Product       @relation(fields: [productId], references: [id])
+}
