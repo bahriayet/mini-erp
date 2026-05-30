@@ -3,7 +3,7 @@
 import React, { useState } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { Lock, Mail, Loader2, ArrowRight } from "lucide-react"
+import { Lock, Mail, Loader2, ArrowRight, Eye, EyeOff } from "lucide-react"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -94,14 +95,23 @@ export default function LoginPage() {
             <div className="relative group">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 required
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
-                className="w-full pl-10 pr-4 py-3 bg-secondary/40 border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200"
+                className="w-full pl-10 pr-12 py-3 bg-secondary/40 border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                disabled={loading}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-foreground disabled:opacity-50 transition-colors cursor-pointer"
+                title={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 
@@ -125,7 +135,52 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <footer className="text-center mt-8 pt-6 border-t border-border/60">
+        {/* Quick Demo Login Selector */}
+        <div className="mt-6 pt-5 border-t border-border/60">
+          <p className="text-xs font-semibold text-muted-foreground tracking-wider uppercase mb-3 text-center">
+            Akun Demo Pengujian (Sekali Klik)
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setEmail("admin@nexus.com")
+                setPassword("admin123")
+              }}
+              disabled={loading}
+              className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-secondary/50 hover:bg-primary/10 border border-border hover:border-primary/30 transition-all duration-200 group text-center cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+            >
+              <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">Admin</span>
+              <span className="text-[9px] text-muted-foreground mt-0.5">Super Admin</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail("jakarta.manager@nexus.com")
+                setPassword("manager123")
+              }}
+              disabled={loading}
+              className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-secondary/50 hover:bg-primary/10 border border-border hover:border-primary/30 transition-all duration-200 group text-center cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+            >
+              <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">Manager</span>
+              <span className="text-[9px] text-muted-foreground mt-0.5">Cab. Jakarta</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail("bandung.staff@nexus.com")
+                setPassword("staff123")
+              }}
+              disabled={loading}
+              className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-secondary/50 hover:bg-primary/10 border border-border hover:border-primary/30 transition-all duration-200 group text-center cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+            >
+              <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">Staff</span>
+              <span className="text-[9px] text-muted-foreground mt-0.5">Cab. Bandung</span>
+            </button>
+          </div>
+        </div>
+
+        <footer className="text-center mt-6 pt-5 border-t border-border/60">
           <p className="text-xs text-muted-foreground">
             Nexus ERP v1.0.0 © 2026. All rights reserved.
           </p>
